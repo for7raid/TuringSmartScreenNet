@@ -1,0 +1,195 @@
+﻿<Window x:Class="TuringSmartScreenNet.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+          xmlns:lc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        xmlns:local="clr-namespace:TuringSmartScreenNet"
+        mc:Ignorable="d"
+        Title="MainWindow" 
+        Height="480" Width="320"
+        Background="Black"
+        Foreground="White">
+    <d:Window.DataContext>
+        <local:MainViewModel/>
+    </d:Window.DataContext>
+   
+    <Grid Margin="5">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="115"/>
+            <RowDefinition Height="115"/>
+            <RowDefinition Height="115"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1,0,1,1" CornerRadius="3"  Margin="0,-10,0,1"/>
+        <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:dd.MM.yyyy}}" FontWeight="Bold"/>
+        <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:HH:mm}}" HorizontalAlignment="Right" FontWeight="Bold" Margin="1,0,5,0"/>
+
+        
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.RowSpan="2" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Margin="0,1,0,1"/>
+
+            <TextBlock Text="CPU" FontSize="18" Margin="5,0,0,0"/>
+            <lc:Gauge
+                  Grid.Row="1"  Margin="5"  DisableAnimations="True"
+                  Value="{Binding HardwareInfo.CPUUsage}" 
+                  From="0" 
+                  To="100"
+                  GaugeBackground="Gray"  
+                  LabelFormatter="{Binding CPUUsageLabelFormatting}"                     
+                  Uses360Mode="True"/>
+
+
+            <TextBlock  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Margin="0,14,0,0"
+                        FontSize="18"
+                        Text="{Binding HardwareInfo.CPUTemperature, StringFormat={}Temp {0} ℃}"/>
+            <lc:AngularGauge 
+                    Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Height="50" Width="50"
+                    Margin="5"
+                    Value="{Binding HardwareInfo.CPUTemperature}"
+                    FromValue="0" ToValue="120" 
+                    LabelsStep="60" TicksStep="10" Wedge="250"
+                    TicksForeground="White" Foreground="White" 
+                    FontWeight="Bold" FontSize=".1"
+                    SectionsInnerRadius=".8">
+                    <lc:AngularGauge.Sections>
+                        <lc:AngularSection FromValue="0" ToValue="50" Fill="Green"/>
+                        <lc:AngularSection FromValue="50" ToValue="70" Fill="#F8A725"/>
+                        <lc:AngularSection FromValue="70" ToValue="120" Fill="Red"/>
+                    </lc:AngularGauge.Sections>
+                </lc:AngularGauge>
+
+            <TextBlock  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top"
+             Margin="0,54,0,0"
+             FontSize="18"
+             Text="{Binding HardwareInfo.CPUFreq, StringFormat={}Clock {0:0.0}G}"/>
+            <lc:AngularGauge  
+                     Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                     Height="50" Width="50"
+                     Margin="5"
+                     Value="{Binding HardwareInfo.CPUFreq}"
+                     FromValue="0" ToValue="6" 
+                     LabelsStep="1000" TicksStep="1000" Wedge="250"
+                     TicksForeground="White" Foreground="White" 
+                     FontWeight="Bold" FontSize="1"
+                     SectionsInnerRadius=".8">
+                    <lc:AngularGauge.Sections>
+                    <lc:AngularSection FromValue="0" ToValue="6" Fill="Gray"/>
+                </lc:AngularGauge.Sections>
+                </lc:AngularGauge>
+
+           
+        </Grid>
+
+        
+
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.RowSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Margin="0,1,1,1"/>
+            <TextBlock Text="RAM" FontSize="18"  Margin="5,0,0,0"/>
+            <lc:Gauge
+               Grid.Row="1"  Margin="5"  DisableAnimations="True"
+               Value="{Binding HardwareInfo.RAMUsage}" 
+               From="0" 
+               To="100"
+               GaugeBackground="Gray"
+               LabelFormatter="{Binding CPUUsageLabelFormatting}"
+               Uses360Mode="True"/>
+
+            <Border Grid.RowSpan="2" Grid.Column="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Margin="1,1,0,1"/>
+            <TextBlock Text="GPU" Grid.Column="1" FontSize="18" Margin="5,0,0,0"/>
+            <lc:Gauge
+                Grid.Row="1" Grid.Column="1"  Margin="5"  DisableAnimations="True"
+                Value="{Binding HardwareInfo.GPUUsage}" 
+                From="0" 
+                To="100"
+                GaugeBackground="Gray"
+                LabelFormatter="{Binding CPUUsageLabelFormatting}"
+                Uses360Mode="True"/>
+        </Grid>
+
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="20"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.RowSpan="2" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Margin="0,1,0,1"/>
+
+
+            <TextBlock Text="FAN" FontSize="18" Margin="5,0,0,0"/>
+
+
+            <lc:AngularGauge Grid.Row="1"  
+                             Margin="0"
+                Value="{Binding HardwareInfo.FANFreqPct}"
+                             FromValue="0" ToValue="100" 
+                   LabelsStep="20" TicksStep="10" Wedge="250"
+                   TicksForeground="White" Foreground="White" 
+                   FontWeight="Bold" FontSize="10"
+                   SectionsInnerRadius=".5">
+                <lc:AngularGauge.Sections>
+
+                    <lc:AngularSection FromValue="0" ToValue="50" Fill="Green"/>
+                    <lc:AngularSection FromValue="50" ToValue="70" Fill="#F8A725"/>
+                    <lc:AngularSection FromValue="70" ToValue="100" Fill="Red"/>
+                </lc:AngularGauge.Sections>
+            </lc:AngularGauge>
+
+            <TextBlock
+                Grid.Column="1"
+                Grid.Row="1"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                FontSize="30"
+                Text="{Binding HardwareInfo.FANFreq, StringFormat={}{0:D} RPM}"/>
+
+        </Grid>
+
+        <Grid Grid.Row="4">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="10*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.RowSpan="2" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Margin="0,1,0,-10"/>
+
+            <TextBlock FontSize="18" Text="▶️" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <TextBlock Grid.Row="1" FontSize="18" Text="⏸️" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+            <TextBlock Grid.Column="1" FontSize="18" Text="{Binding PlayerArtistName}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" FontSize="18" Grid.Row="1" Text="{Binding PlayerSongName}" VerticalAlignment="Center"/>
+        </Grid>
+
+    </Grid>
+</Window>
