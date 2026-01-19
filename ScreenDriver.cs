@@ -90,7 +90,7 @@ public class ScreenDriver : IDisposable
         _serialPort.Write(byteBuffer, 0, byteBuffer.Length);
     }
 
-    public void SendImage(byte[] imageData)
+    public void SendImage((byte[] imageData, int x, int y, int width, int height) data)
     {
         if (_serialPort?.IsOpen != true) return;
 
@@ -98,15 +98,23 @@ public class ScreenDriver : IDisposable
         //byte[] imageData = ImageConverter.ConvertToRgb565(bitmap);
 
         // 2. 发送头
-        byte[] header = BuildHeader(Command.DisplayBitmap, 0, 0, 320, 480);
+        byte[] header = BuildHeader(Command.DisplayBitmap, data.x, data.y, data.width, data.height);
         _serialPort.Write(header, 0, header.Length);
 
         // 3. 分块发送
-        for (int i = 0; i < imageData.Length; i += ChunkSize)
+        for (int i = 0; i < data.imageData.Length; i += ChunkSize)
         {
-            int count = Math.Min(ChunkSize, imageData.Length - i);
-            _serialPort.Write(imageData, i, count);
+            int count = Math.Min(ChunkSize, data.imageData.Length - i);
+            _serialPort.Write(data.imageData, i, count);
         }
+    }
+
+    public void SetBrightness(int level)
+    {
+        var level_absolute = 255 - ((level / 100) * 255);
+        if (_serialPort?.IsOpen != true) return;
+        byte[] packet = BuildHeader(Command.SetBrightness, level_absolute, 0, 0, 0);
+        _serialPort.Write(packet, 0, packet.Length);
     }
 
     public static byte[] BuildHeader(Command cmd, int x, int y, int width, int height)

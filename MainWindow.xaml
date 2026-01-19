@@ -9,7 +9,9 @@
         Title="MainWindow" 
         Height="480" Width="320"
         Background="Black"
-        Foreground="White">
+        Foreground="White"
+        ContentRendered="Window_ContentRendered"
+        Closed="Window_Closed">
     <d:Window.DataContext>
         <local:MainViewModel/>
     </d:Window.DataContext>
@@ -26,7 +28,7 @@
 
         <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1,0,1,1" CornerRadius="3"  Margin="0,-10,0,1"/>
         <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:dd.MM.yyyy}}" FontWeight="Bold"/>
-        <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:HH:mm:ss}}" HorizontalAlignment="Right" FontWeight="Bold" Margin="1,0,5,0"/>
+        <TextBlock Name="txtTime" Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:HH:mm:ss}}" HorizontalAlignment="Right" FontWeight="Bold" Margin="1,0,5,0"/>
 
         
         <Grid Grid.Row="1">
@@ -42,28 +44,28 @@
             <Border Grid.RowSpan="2" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Margin="0,1,0,1"/>
 
             <TextBlock Text="CPU" FontSize="18" Margin="5,0,0,0"/>
-            <lc:Gauge
+            <lc:Gauge Name="CPUUsage"
                   Grid.Row="1"  Margin="5"  DisableAnimations="True"
                   Value="{Binding HardwareInfo.CPUUsage}" 
                   From="0" 
                   To="100"
-                  
+                  HighFontSize="20"
                   GaugeBackground="Gray"  
                   LabelFormatter="{Binding CPUUsageLabelFormatting}"                     
                   Uses360Mode="True"/>
 
 
-            <TextBlock  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top"
+            <TextBlock  Grid.Column="1" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top"
                         Margin="0,14,0,0"
                         FontSize="18"
                         Text="{Binding HardwareInfo.CPUTemperature, StringFormat={}Temp {0} ℃}"/>
             <lc:AngularGauge 
-                    Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Grid.Column="1" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top"
                     Height="50" Width="50"
                     Margin="5"
                     Value="{Binding HardwareInfo.CPUTemperature}"
                     FromValue="0" ToValue="120" 
-                    LabelsStep="60" TicksStep="10" Wedge="250"
+                    LabelsStep="120" TicksStep="10" Wedge="250"
                     TicksForeground="White" Foreground="White" 
                     FontWeight="Bold" FontSize=".1"
                     SectionsInnerRadius=".8">
@@ -116,6 +118,7 @@
                From="0" 
                To="100"
                GaugeBackground="Gray"
+               HighFontSize="20"
                LabelFormatter="{Binding CPUUsageLabelFormatting}"
                Uses360Mode="True"/>
 
@@ -127,6 +130,7 @@
                 From="0" 
                 To="100"
                 GaugeBackground="Gray"
+                HighFontSize="20"
                 LabelFormatter="{Binding CPUUsageLabelFormatting}"
                 Uses360Mode="True"/>
         </Grid>
