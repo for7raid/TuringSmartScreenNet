@@ -10,7 +10,10 @@
         Height="480" Width="320"
         Background="Black"
         Foreground="White"
+        ResizeMode="CanMinimize"
+        WindowStyle="ToolWindow"
         ContentRendered="Window_ContentRendered"
+        Closing="Window_Closing"
         Closed="Window_Closed">
     <d:Window.DataContext>
         <local:MainViewModel/>
@@ -26,7 +29,7 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1,0,1,1" CornerRadius="3"  Margin="0,-10,0,1"/>
+        <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1,1,1,1" CornerRadius="3"  Margin="0,-1,0,1"/>
         <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:dd.MM.yyyy}}" FontWeight="Bold"/>
         <TextBlock Name="txtTime" Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:HH:mm:ss}}" HorizontalAlignment="Right" FontWeight="Bold" Margin="1,0,5,0"/>
 
@@ -187,10 +190,15 @@
                 <ColumnDefinition Width="10*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.RowSpan="2" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Margin="0,1,0,-10"/>
+            <Border Grid.RowSpan="2" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Margin="0,1,0,-1"/>
 
-            <TextBlock FontSize="18" Text="▶️" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-            <TextBlock Grid.Row="1" FontSize="18" Text="⏸️" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+            <TextBlock FontSize="18" VerticalAlignment="Center" HorizontalAlignment="Center"
+            Text="{Binding PlayBackState}"/>
+            <TextBlock FontSize="18" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+            Text="{Binding PlayerHostName}"/>
+
+
 
             <TextBlock Grid.Column="1" FontSize="18" Text="{Binding PlayerArtistName}" VerticalAlignment="Center"/>
             <TextBlock Grid.Column="1" FontSize="18" Grid.Row="1" Text="{Binding PlayerSongName}" VerticalAlignment="Center"/>

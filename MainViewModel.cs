@@ -28,7 +28,7 @@ namespace TuringSmartScreenNet
             set { _dateTimeNow = value; OnPropertyChanged(); }
         }
 
-        private string _playerSongName = "My heard is go on";
+        private string _playerSongName;
 
         public string PlayerSongName
         {
@@ -36,13 +36,29 @@ namespace TuringSmartScreenNet
             set { if (_playerSongName == value) return; _playerSongName = value; OnPropertyChanged(); }
         }
 
-        private string _playerArtistName = "Moby";
-
+        private string _playerArtistName;
         public string PlayerArtistName
         {
             get { return _playerArtistName; }
             set { if (_playerArtistName == value) return; _playerArtistName = value; OnPropertyChanged(); }
         }
+
+        private string _playBackState;
+
+        public string PlayBackState
+        {
+            get { return _playBackState; }
+            set { if (_playBackState == value) return;  _playBackState = value; OnPropertyChanged(); }
+        }
+
+        private string _playerHostName;
+
+        public string PlayerHostName
+        {
+            get { return _playerHostName; }
+            set { if (_playerHostName == value) return; _playerHostName = value; OnPropertyChanged(); }
+        }
+
 
         public Func<double, string> CPUUsageLabelFormatting { get; } = (x) => $"{x}%";
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)

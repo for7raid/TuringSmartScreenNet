@@ -1,0 +1,38 @@
+{
+    "manifest_version": 3,
+    "name": "Track Monitor",
+    "version": "1.0",
+    "permissions": [
+        "tabs"
+    ],
+    "host_permissions": [
+        "https://zvuk.com/*",
+        "https://*.vk.com/*",
+        "http://127.0.0.1:10455/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                 "https://__zvuk.com/*",
+                       "https://__.vk.com/*"
+            ],
+            "js": [
+                "intercept.js"
+            ],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://zvuk.com/*",
+                "https://*.vk.com/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ]
+}
