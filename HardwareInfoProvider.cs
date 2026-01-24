@@ -1,4 +1,5 @@
 ﻿using LibreHardwareMonitor.Hardware;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace TuringSmartScreenNet
 {
@@ -21,35 +22,36 @@ namespace TuringSmartScreenNet
         {
             
             var info = new HardwareInfo();
-            foreach (var item in computer.Hardware)
+            foreach (var hardware in computer.Hardware)
             {
-                item.Update();
+                hardware.Update();
 
-                var sensors = item.Sensors
+                var sensors = hardware.Sensors
                     .Where(s => s.Value.HasValue)
                     .ToList();
 
 
-                if (item.HardwareType == HardwareType.Cpu)
+                if (hardware.HardwareType == HardwareType.Cpu)
                 {
                     info.CPUTemperature = (int)(sensors.FirstOrDefault(static s => s.SensorType == SensorType.Temperature && s.Name == "CPU Package")?.Value ?? 0);
                     info.CPUFreq = (sensors.FirstOrDefault(static s => s.SensorType == SensorType.Clock)?.Value ?? 0) / 1000;
                     info.CPUUsage = (int)(sensors.FirstOrDefault(static s => s.SensorType == SensorType.Load && s.Name == "CPU Total")?.Value ?? 0);
+
                 }
 
-                if (item.HardwareType == HardwareType.GpuIntel)
+                if (hardware.HardwareType == HardwareType.GpuIntel)
                 {
                     info.GPUUsage = (int)(sensors.FirstOrDefault(static s => s.SensorType == SensorType.Load && s.Name == "GPU Core")?.Value ?? info.GPUUsage);
                 }
 
-                if (item.HardwareType == HardwareType.Memory && item.Name == "Total Memory")
+                if (hardware.HardwareType == HardwareType.Memory && hardware.Name == "Total Memory")
                 {
                     info.RAMUsage = (int)(sensors.FirstOrDefault(static s => s.SensorType == SensorType.Load)?.Value ?? 0);
                 }
 
-                if (item.HardwareType == HardwareType.Motherboard)
+                if (hardware.HardwareType == HardwareType.Motherboard)
                 {
-                    foreach (var subHardware in item.SubHardware)
+                    foreach (var subHardware in hardware.SubHardware)
                     {
                         subHardware.Update();
                         var subSensors = subHardware.Sensors

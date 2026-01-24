@@ -7,10 +7,11 @@
          xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:local="clr-namespace:TuringSmartScreenNet"
         mc:Ignorable="d"
-        Title="MainWindow" 
+        Title="TuringSmartScreenNet" 
         Height="480" Width="320"
         Background="Black"
         Foreground="White"
+        Icon="/onebit_38.png"
         ResizeMode="CanMinimize"
         WindowStyle="ToolWindow"
         ContentRendered="Window_ContentRendered"
@@ -21,8 +22,8 @@
 
     <Window.Resources>
         <ContextMenu x:Shared="false" x:Key="SysTrayMenu">
-            <MenuItem Header="Показать" Click="Show_Click"/>
-            <MenuItem Header="Перезапустить" />
+            <MenuItem Header="Показать основное окно" Click="Show_Click"/>
+            <!--<MenuItem Header="Перезапустить" />-->
             <Separator />
             <MenuItem Header="Выход" Click="Exit_Click" />
         </ContextMenu>

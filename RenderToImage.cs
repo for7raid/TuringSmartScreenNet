@@ -1,11 +1,4 @@
-﻿
-
-
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Security.RightsManagement;
-using System.Text;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -59,7 +52,7 @@ namespace TuringSmartScreenNet
             }
         }
 
-        public static (byte[] data, int x, int y, int width, int height) SaveWpfElementAsBitmap(FrameworkElement element)
+        public static ImageData SaveWpfElementAsBitmap(FrameworkElement element)
         {
             // Ensure the element has its layout calculated if it's not already displayed
             if (element.ActualWidth == 0 || element.ActualHeight == 0)
@@ -129,11 +122,11 @@ namespace TuringSmartScreenNet
 
             wb.Unlock();
 
-            return (resultBuffer, 0, 0, width, height);
+            return new(resultBuffer, 0, 0, width, height);
 
         }
 
-        public static (byte[] data, int x, int y, int width, int height) Crop(byte[] data, int x, int y, int width, int height)
+        public static ImageData Crop(byte[] data, int x, int y, int width, int height)
         {
             int screenWidth = 320,
                 bytesPerPixel = 2,
@@ -156,10 +149,10 @@ namespace TuringSmartScreenNet
                 }
             }
 
-            return (resultBuffer, x, y, width, height);
+            return new(resultBuffer, x, y, width, height);
         }
 
-        public static List<(byte[] data, int x, int y, int width, int height)> GetDiffs(byte[] prev, byte[] current)
+        public static List<ImageData> GetDiffs(byte[] prev, byte[] current)
         {
             const int width = 320;
             const int height = 480;
@@ -169,7 +162,7 @@ namespace TuringSmartScreenNet
 
             for (int i = 0; i < prev.Length; i += 2)
             {
-                diff[i / 2] = prev[i] != current[i] || prev[i + 1] != current[i + 1];
+                diff[i / 2] = prev[i] != current[i];
             }
 
             var dilated = Dilate(diff, width, height, dilationRadius);
@@ -275,3 +268,5 @@ namespace TuringSmartScreenNet
 
     }
 }
+
+public record class ImageData(byte[] Data, int X, int Y, int Width, int Height);

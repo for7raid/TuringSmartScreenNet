@@ -91,17 +91,17 @@ public class ScreenDriver : IDisposable
         _serialPort.Write(byteBuffer, 0, byteBuffer.Length);
     }
 
-    public void SendImage((byte[] imageData, int x, int y, int width, int height) data)
+    public void SendImage(ImageData data)
     {
         if (_serialPort?.IsOpen != true) return;
 
-        byte[] header = BuildHeader(Command.DisplayBitmap, data.x, data.y, data.width, data.height);
+        byte[] header = BuildHeader(Command.DisplayBitmap, data.X, data.Y, data.Width, data.Height);
         _serialPort.Write(header, 0, header.Length);
 
-        for (int i = 0; i < data.imageData.Length; i += ChunkSize)
+        for (int i = 0; i < data.Data.Length; i += ChunkSize)
         {
-            int count = Math.Min(ChunkSize, data.imageData.Length - i);
-            _serialPort.Write(data.imageData, i, count);
+            int count = Math.Min(ChunkSize, data.Data.Length - i);
+            _serialPort.Write(data.Data, i, count);
         }
     }
 

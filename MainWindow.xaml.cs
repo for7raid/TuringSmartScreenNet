@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
@@ -16,16 +15,13 @@ namespace TuringSmartScreenNet
 
         private readonly HardwareInfoProvider monitor;
 
-        private TcpListener listener;
+        private TcpListener? listener;
 
         public ScreenDriver screen { get; }
 
-        private readonly DispatcherTimer dispatcherTimer;
-
-
-
-        private byte[] prevImage;
-        private Thread _updateScreenThread;
+        private readonly CancellationTokenSource _Cts;
+        private readonly CancellationToken _cancellationToken;
+        private byte[]? prevImage;
 
         private MainViewModel ViewModel { get; set; } = new();
 
@@ -37,26 +33,17 @@ namespace TuringSmartScreenNet
 
             screen = new ScreenDriver("COM3");
             screen.Connect();
-            //screen.SendCommand(Command.Reset);
-
-            //Thread.Sleep(1000);
-
             screen.SendCommand(Command.ScreenOn);
-            screen.SetOrientation(Orientation.PORTRAIT, 320, 480);
             screen.SendCommand(Command.Clear);
             screen.SetOrientation(Orientation.REVERSE_PORTRAIT, 320, 480);
             screen.SetBrightness(100);
 
-            //dispatcherTimer = new DispatcherTimer();
-            //dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
-            //dispatcherTimer.Interval = TimeSpan.FromMicroseconds(1000);
-
             StartTCP(10455);
-
-          
 
             DataContext = ViewModel;
 
+            _Cts = new CancellationTokenSource();
+            _cancellationToken = _Cts.Token;
 
         }
 
@@ -67,19 +54,19 @@ namespace TuringSmartScreenNet
             ViewModel.DateTimeNow = DateTime.Now;
             var image = RenderToImage.SaveWpfElementAsBitmap(this);
 
-            foreach (var element in RenderToImage.GetDiffs(prevImage, image.data))
+            foreach (var element in RenderToImage.GetDiffs(prevImage, image.Data))
             {
                 screen.SendImage(element);
             }
 
-            prevImage = image.data;
+            prevImage = image.Data;
 
 
         }
 
         private void UpdateScreen()
         {
-            while (true)
+            while (!_cancellationToken.IsCancellationRequested)
             {
                 Dispatcher.Invoke(DispatcherPriority.Background, () =>
                 {
@@ -87,12 +74,12 @@ namespace TuringSmartScreenNet
                     ViewModel.DateTimeNow = DateTime.Now;
                     var image = RenderToImage.SaveWpfElementAsBitmap(this);
 
-                    foreach (var element in RenderToImage.GetDiffs(prevImage, image.data))
+                    foreach (var element in RenderToImage.GetDiffs(prevImage, image.Data))
                     {
                         screen.SendImage(element);
                     }
 
-                    prevImage = image.data;
+                    prevImage = image.Data;
                 });
 
                 Thread.Sleep(500);
@@ -107,12 +94,9 @@ namespace TuringSmartScreenNet
             var image = RenderToImage.SaveWpfElementAsBitmap(this);
             screen.SendImage(image);
 
-            prevImage = image.data;
+            prevImage = image.Data;
 
-            //dispatcherTimer.Start();
-            
-            _updateScreenThread = new Thread(UpdateScreen);
-            _updateScreenThread.Start();
+            new Thread(UpdateScreen).Start();
 
         }
 
@@ -126,13 +110,13 @@ namespace TuringSmartScreenNet
             acceptThread.Start();
         }
 
-        private void AcceptClients()
+        private async void AcceptClients()
         {
-            while (true)
+            while (!_cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    TcpClient client = listener.AcceptTcpClient();
+                    TcpClient client = await listener.AcceptTcpClientAsync(_cancellationToken);
 
                     Thread clientThread = new Thread(() => HandleClient(client));
                     clientThread.Start();
@@ -157,8 +141,6 @@ namespace TuringSmartScreenNet
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
                     var jsonString = message.Split("\r\n\r\n")[1];
-
-                    Debug.WriteLine(jsonString);
 
                     var payload = JsonSerializer.Deserialize<MultimediaMeta>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -200,18 +182,21 @@ namespace TuringSmartScreenNet
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             WindowState = WindowState.Minimized;
+            ShowInTaskbar = false;
             e.Cancel = true;
         }
 
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
-            _updateScreenThread.Abort();
+            _Cts.Cancel();
+            screen.Dispose();
             Application.Current.Shutdown();
         }
 
         private void Show_Click(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Normal;
+            ShowInTaskbar = true;
             Activate();
         }
     }
