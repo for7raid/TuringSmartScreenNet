@@ -25,6 +25,8 @@ namespace TuringSmartScreenNet
 
 
         private byte[] prevImage;
+        private Thread _updateScreenThread;
+
         private MainViewModel ViewModel { get; set; } = new();
 
         public MainWindow()
@@ -108,8 +110,9 @@ namespace TuringSmartScreenNet
             prevImage = image.data;
 
             //dispatcherTimer.Start();
-
-            new Thread(UpdateScreen).Start();
+            
+            _updateScreenThread = new Thread(UpdateScreen);
+            _updateScreenThread.Start();
 
         }
 
@@ -198,6 +201,18 @@ namespace TuringSmartScreenNet
         {
             WindowState = WindowState.Minimized;
             e.Cancel = true;
+        }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            _updateScreenThread.Abort();
+            Application.Current.Shutdown();
+        }
+
+        private void Show_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Normal;
+            Activate();
         }
     }
 }

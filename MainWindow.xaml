@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
           xmlns:lc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+         xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:local="clr-namespace:TuringSmartScreenNet"
         mc:Ignorable="d"
         Title="MainWindow" 
@@ -17,7 +18,18 @@
     <d:Window.DataContext>
         <local:MainViewModel/>
     </d:Window.DataContext>
-   
+
+    <Window.Resources>
+        <ContextMenu x:Shared="false" x:Key="SysTrayMenu">
+            <MenuItem Header="Показать" Click="Show_Click"/>
+            <MenuItem Header="Перезапустить" />
+            <Separator />
+            <MenuItem Header="Выход" Click="Exit_Click" />
+        </ContextMenu>
+    </Window.Resources>
+
+
+
     <Grid Margin="5">
 
         <Grid.RowDefinitions>
@@ -28,11 +40,18 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
 
+        <tb:TaskbarIcon x:Name="myNotifyIcon"
+                 Visibility="Visible"
+                 ToolTipText="TuringSmartScreenNet"
+                 IconSource="/onebit_38.png"
+                 ContextMenu="{StaticResource SysTrayMenu}"
+                 TrayMouseDoubleClick="Show_Click"/>
+
         <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1,1,1,1" CornerRadius="3"  Margin="0,-1,0,1"/>
         <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:dd.MM.yyyy}}" FontWeight="Bold"/>
         <TextBlock Name="txtTime" Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:HH:mm:ss}}" HorizontalAlignment="Right" FontWeight="Bold" Margin="1,0,5,0"/>
 
-        
+
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="20"/>
@@ -71,12 +90,12 @@
                     TicksForeground="White" Foreground="White" 
                     FontWeight="Bold" FontSize=".1"
                     SectionsInnerRadius=".8">
-                    <lc:AngularGauge.Sections>
-                        <lc:AngularSection FromValue="0" ToValue="50" Fill="Green"/>
-                        <lc:AngularSection FromValue="50" ToValue="70" Fill="#F8A725"/>
-                        <lc:AngularSection FromValue="70" ToValue="120" Fill="Red"/>
-                    </lc:AngularGauge.Sections>
-                </lc:AngularGauge>
+                <lc:AngularGauge.Sections>
+                    <lc:AngularSection FromValue="0" ToValue="50" Fill="Green"/>
+                    <lc:AngularSection FromValue="50" ToValue="70" Fill="#F8A725"/>
+                    <lc:AngularSection FromValue="70" ToValue="120" Fill="Red"/>
+                </lc:AngularGauge.Sections>
+            </lc:AngularGauge>
 
             <TextBlock  Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top"
              Margin="0,54,0,0"
@@ -92,15 +111,15 @@
                      TicksForeground="White" Foreground="White" 
                      FontWeight="Bold" FontSize="1"
                      SectionsInnerRadius=".8">
-                    <lc:AngularGauge.Sections>
+                <lc:AngularGauge.Sections>
                     <lc:AngularSection FromValue="0" ToValue="6" Fill="Gray"/>
                 </lc:AngularGauge.Sections>
-                </lc:AngularGauge>
+            </lc:AngularGauge>
 
-           
+
         </Grid>
 
-        
+
 
         <Grid Grid.Row="2">
             <Grid.RowDefinitions>
