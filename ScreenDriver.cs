@@ -70,6 +70,7 @@ public class ScreenDriver : IDisposable
 
     public void SetOrientation(Orientation orientation, int width, int height)
     {
+        if (_serialPort?.IsOpen != true) return;
 
         int x = 0,
         y = 0,
@@ -94,14 +95,9 @@ public class ScreenDriver : IDisposable
     {
         if (_serialPort?.IsOpen != true) return;
 
-        // 1. 转换数据
-        //byte[] imageData = ImageConverter.ConvertToRgb565(bitmap);
-
-        // 2. 发送头
         byte[] header = BuildHeader(Command.DisplayBitmap, data.x, data.y, data.width, data.height);
         _serialPort.Write(header, 0, header.Length);
 
-        // 3. 分块发送
         for (int i = 0; i < data.imageData.Length; i += ChunkSize)
         {
             int count = Math.Min(ChunkSize, data.imageData.Length - i);
@@ -111,6 +107,8 @@ public class ScreenDriver : IDisposable
 
     public void SetBrightness(int level)
     {
+        if (_serialPort?.IsOpen != true) return;
+
         var level_absolute = 255 - ((level / 100) * 255);
         if (_serialPort?.IsOpen != true) return;
         byte[] packet = BuildHeader(Command.SetBrightness, level_absolute, 0, 0, 0);

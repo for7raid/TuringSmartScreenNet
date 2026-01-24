@@ -13,8 +13,7 @@
         ResizeMode="CanMinimize"
         WindowStyle="ToolWindow"
         ContentRendered="Window_ContentRendered"
-        Closing="Window_Closing"
-        Closed="Window_Closed">
+        Closing="Window_Closing">
     <d:Window.DataContext>
         <local:MainViewModel/>
     </d:Window.DataContext>

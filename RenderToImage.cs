@@ -59,7 +59,7 @@ namespace TuringSmartScreenNet
             }
         }
 
-        public static (byte[] data, int x, int y, int width, int height) SaveWpfElementAsBitmap(FrameworkElement element, Visual relativeTo)
+        public static (byte[] data, int x, int y, int width, int height) SaveWpfElementAsBitmap(FrameworkElement element)
         {
             // Ensure the element has its layout calculated if it's not already displayed
             if (element.ActualWidth == 0 || element.ActualHeight == 0)
@@ -71,12 +71,6 @@ namespace TuringSmartScreenNet
             // Define the dimensions of the bitmap and DPI
             int width = (int)element.ActualWidth;
             int height = (int)element.ActualHeight;
-            GeneralTransform transform = element.TransformToAncestor(relativeTo);
-            Point position1 = transform.Transform(new Point(0, 0));
-
-            Point screenPosition = element.PointToScreen(new Point(0d, 0d));
-            Point screenPositionRelative = relativeTo.PointToScreen(new Point(0d, 0d));
-            Point position = new Point(screenPosition.X - screenPositionRelative.X, screenPosition.Y - screenPositionRelative.Y);
 
             // Create a RenderTargetBitmap
             RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(
@@ -135,7 +129,7 @@ namespace TuringSmartScreenNet
 
             wb.Unlock();
 
-            return (resultBuffer, (int)position.X, (int)position.Y, width, height);
+            return (resultBuffer, 0, 0, width, height);
 
         }
 

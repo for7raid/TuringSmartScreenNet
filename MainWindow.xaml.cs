@@ -17,11 +17,12 @@ namespace TuringSmartScreenNet
         private readonly HardwareInfoProvider monitor;
 
         private TcpListener listener;
-        private List<TcpClient> clients = new List<TcpClient>(); // Keeps track of connected clients
 
         public ScreenDriver screen { get; }
 
         private readonly DispatcherTimer dispatcherTimer;
+
+
 
         private byte[] prevImage;
         private MainViewModel ViewModel { get; set; } = new();
@@ -50,15 +51,19 @@ namespace TuringSmartScreenNet
 
             StartTCP(10455);
 
+          
+
             DataContext = ViewModel;
 
 
         }
+
+
         private void dispatcherTimer_Tick(object? sender, EventArgs e)
         {
             ViewModel.HardwareInfo = monitor.CollectInfo();
             ViewModel.DateTimeNow = DateTime.Now;
-            var image = RenderToImage.SaveWpfElementAsBitmap(this, this);
+            var image = RenderToImage.SaveWpfElementAsBitmap(this);
 
             foreach (var element in RenderToImage.GetDiffs(prevImage, image.data))
             {
@@ -78,7 +83,7 @@ namespace TuringSmartScreenNet
                 {
                     ViewModel.HardwareInfo = monitor.CollectInfo();
                     ViewModel.DateTimeNow = DateTime.Now;
-                    var image = RenderToImage.SaveWpfElementAsBitmap(this, this);
+                    var image = RenderToImage.SaveWpfElementAsBitmap(this);
 
                     foreach (var element in RenderToImage.GetDiffs(prevImage, image.data))
                     {
@@ -88,7 +93,7 @@ namespace TuringSmartScreenNet
                     prevImage = image.data;
                 });
 
-                Thread.Sleep(1000);
+                Thread.Sleep(500);
             }
         }
 
@@ -97,7 +102,7 @@ namespace TuringSmartScreenNet
 
             ViewModel.HardwareInfo = monitor.CollectInfo();
             ViewModel.DateTimeNow = DateTime.Now;
-            var image = RenderToImage.SaveWpfElementAsBitmap(this, this);
+            var image = RenderToImage.SaveWpfElementAsBitmap(this);
             screen.SendImage(image);
 
             prevImage = image.data;
@@ -106,12 +111,6 @@ namespace TuringSmartScreenNet
 
             new Thread(UpdateScreen).Start();
 
-        }
-
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            //screen.SendCommand(Command.ScreenOff);
-            //screen.Dispose();
         }
 
         public void StartTCP(int port)
@@ -131,8 +130,6 @@ namespace TuringSmartScreenNet
                 try
                 {
                     TcpClient client = listener.AcceptTcpClient();
-                    clients.Add(client);
-                    Console.WriteLine("Client connected.");
 
                     Thread clientThread = new Thread(() => HandleClient(client));
                     clientThread.Start();
@@ -193,7 +190,6 @@ namespace TuringSmartScreenNet
             {
                 stream.Close();
                 client.Close();
-                clients.Remove(client);
                 Console.WriteLine("Client disconnected.");
             }
         }
