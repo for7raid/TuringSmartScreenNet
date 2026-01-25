@@ -17,7 +17,7 @@
         ContentRendered="Window_ContentRendered"
         Closing="Window_Closing">
     <d:Window.DataContext>
-        <local:MainViewModel/>
+        <local:MainViewModel BluetoothStatus="ᛒ 100%" PlayerArtistName="Moby" PlayerSongName="The Broken Places" PlayBackState="▶️" PlayerHostName="vk"/>
     </d:Window.DataContext>
 
     <Window.Resources>
@@ -49,8 +49,17 @@
                  TrayMouseDoubleClick="Show_Click"/>
 
         <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1,1,1,1" CornerRadius="3"  Margin="0,-1,0,1"/>
-        <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:dd.MM.yyyy}}" FontWeight="Bold"/>
-        <TextBlock Name="txtTime" Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:HH:mm:ss}}" HorizontalAlignment="Right" FontWeight="Bold" Margin="1,0,5,0"/>
+        <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:dd.MM.yy}}" 
+                   VerticalAlignment="Center"
+                   FontWeight="Bold" Margin="5,0,0,0"/>
+        <TextBlock Name="txtTime" Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:HH:mm:ss}}" 
+                   HorizontalAlignment="Right" 
+                   VerticalAlignment="Center"
+                   FontWeight="Bold" Margin="0,0,5,0"/>
+        
+        <TextBlock Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   FontSize="16" Text="{Binding BluetoothStatus}" 
+                   FontWeight="Bold"/>
 
 
         <Grid Grid.Row="1">

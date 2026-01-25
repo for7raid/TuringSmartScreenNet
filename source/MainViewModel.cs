@@ -59,8 +59,14 @@ namespace TuringSmartScreenNet
             set { if (_playerHostName == value) return; _playerHostName = value; OnPropertyChanged(); }
         }
 
-
+        private string _bluetoothStatus;
+        public string BluetoothStatus
+        {
+            get { return _bluetoothStatus; }
+            set { if (_bluetoothStatus == value) return; _bluetoothStatus = value; OnPropertyChanged(); }
+        }
         public Func<double, string> CPUUsageLabelFormatting { get; } = (x) => $"{x}%";
+
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }

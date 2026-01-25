@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Management;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
@@ -38,30 +39,74 @@ namespace TuringSmartScreenNet
             screen.SetOrientation(Orientation.REVERSE_PORTRAIT, 320, 480);
             screen.SetBrightness(100);
 
-            StartTCP(10455);
+            StartTCP();
 
             DataContext = ViewModel;
 
             _Cts = new CancellationTokenSource();
             _cancellationToken = _Cts.Token;
 
+
+
         }
 
-
-        private void dispatcherTimer_Tick(object? sender, EventArgs e)
+        private string GetBluetoothBatteryStatus()
         {
-            ViewModel.HardwareInfo = monitor.CollectInfo();
-            ViewModel.DateTimeNow = DateTime.Now;
-            var image = RenderToImage.SaveWpfElementAsBitmap(this);
+            bool isConnected = false;
+            byte status = 0;
 
-            foreach (var element in RenderToImage.GetDiffs(prevImage, image.Data))
+            using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%Studio Wireless%'");
+            var list = searcher.Get();
+            foreach (ManagementObject obj in list)
             {
-                screen.SendImage(element);
+                //string devId = obj["DeviceID"]?.ToString() ?? "";
+                //string caption = obj["Caption"]?.ToString() ?? "";
+                //string PNPClass = obj["PNPClass"]?.ToString() ?? "";
+                //var pp = obj.Properties;
+
+                var batteryStatusProperty = "{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2";
+                var connectionStatusProperty = "{83DA6326-97A6-4088-9453-A1923F573B29} 15";
+
+                var batteryStatus = GetDeviceProperty<byte?>(obj, batteryStatusProperty);
+                if (batteryStatus.HasValue)
+                {
+                    status = batteryStatus.Value;
+                }
+
+                var isConnectedValue = GetDeviceProperty<bool?>(obj, connectionStatusProperty);
+                if (isConnectedValue.HasValue && isConnectedValue.Value)
+                {
+                    isConnected = isConnectedValue.Value;
+                }
+
             }
+            if (isConnected)
+            {
+                return $"ᛒ {status}%";
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
 
-            prevImage = image.Data;
+        private T? GetDeviceProperty<T>(ManagementObject obj, string propName)
+        {
+            var args = new object[] { new string[] { propName }, null! };
+            try
+            {
+                obj.InvokeMethod("GetDeviceProperties", args);
+                using ManagementBaseObject? ss = (args[1] as ManagementBaseObject[])?[0];
+                var data = ss?.Properties
+                       .Cast<PropertyData>()
+                       .FirstOrDefault(x => x.Name == "Data")?.Value;
+                return (T?)data;
 
-
+            }
+            catch
+            {
+                return default;
+            }
         }
 
         private void UpdateScreen()
@@ -72,6 +117,12 @@ namespace TuringSmartScreenNet
                 {
                     ViewModel.HardwareInfo = monitor.CollectInfo();
                     ViewModel.DateTimeNow = DateTime.Now;
+
+                    if (ViewModel.DateTimeNow.Second % 10 == 0)
+                    {
+                        ViewModel.BluetoothStatus = GetBluetoothBatteryStatus();
+                    }
+
                     var image = RenderToImage.SaveWpfElementAsBitmap(this);
 
                     foreach (var element in RenderToImage.GetDiffs(prevImage, image.Data))
@@ -100,9 +151,9 @@ namespace TuringSmartScreenNet
 
         }
 
-        public void StartTCP(int port)
+        public void StartTCP(int port = 10455)
         {
-            listener = new TcpListener(IPAddress.Any, port);
+            listener = new TcpListener(IPAddress.Loopback, port);
             listener.Start();
             Console.WriteLine("Server started, waiting for connections...");
 
