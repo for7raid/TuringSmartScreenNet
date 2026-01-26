@@ -22,7 +22,7 @@
 
 **Лицензия** - код свободен, делайте что хотите.
 
-Теги: .Net 10, WPF, Bluetooth, Hardware, turzx, screen
+Теги: .Net 10, WPF, Bluetooth, Hardware, turzx, screen, USB35INCHIPSV2, 35inchENG
 
 # Pet Project
 ## Displaying system information on a 320×480 pixel screen
@@ -49,7 +49,7 @@ Acknowledgements and information sources:
 * https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
 * https://github.com/nikvoronin/Xm4Battery
 
-tags: .Net 10, WPF, Bluetooth, Hardware, turzx, screen
+tags: .Net 10, WPF, Bluetooth, Hardware, turzx, screen, USB35INCHIPSV2, 35inchENG
 
 **License** — the code is free; do whatever you want with it.
 
