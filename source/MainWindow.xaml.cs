@@ -50,6 +50,46 @@ namespace TuringSmartScreenNet
 
         }
 
+        private void Window_ContentRendered(object sender, EventArgs e)
+        {
+
+            ViewModel.HardwareInfo = monitor.CollectInfo();
+            ViewModel.DateTimeNow = DateTime.Now;
+            var image = RenderToImage.SaveWpfElementAsBitmap(this);
+            screen.SendImage(image);
+
+            prevImage = image.Data;
+
+            new Thread(UpdateScreen).Start();
+
+        }
+        private void UpdateScreen()
+        {
+            while (!_cancellationToken.IsCancellationRequested)
+            {
+                Dispatcher.Invoke(DispatcherPriority.Background, () =>
+                {
+                    ViewModel.HardwareInfo = monitor.CollectInfo();
+                    ViewModel.DateTimeNow = DateTime.Now;
+
+                    if (ViewModel.DateTimeNow.Second % 10 == 0)
+                    {
+                        ViewModel.BluetoothStatus = GetBluetoothBatteryStatus();
+                    }
+
+                    var image = RenderToImage.SaveWpfElementAsBitmap(this);
+
+                    foreach (var element in RenderToImage.GetDiffs(prevImage, image.Data))
+                    {
+                        screen.SendImage(element);
+                    }
+
+                    prevImage = image.Data;
+                });
+
+                Thread.Sleep(1000);
+            }
+        }
         private string GetBluetoothBatteryStatus()
         {
             bool isConnected = false;
@@ -109,51 +149,9 @@ namespace TuringSmartScreenNet
             }
         }
 
-        private void UpdateScreen()
-        {
-            while (!_cancellationToken.IsCancellationRequested)
-            {
-                Dispatcher.Invoke(DispatcherPriority.Background, () =>
-                {
-                    ViewModel.HardwareInfo = monitor.CollectInfo();
-                    ViewModel.DateTimeNow = DateTime.Now;
-
-                    if (ViewModel.DateTimeNow.Second % 10 == 0)
-                    {
-                        ViewModel.BluetoothStatus = GetBluetoothBatteryStatus();
-                    }
-
-                    var image = RenderToImage.SaveWpfElementAsBitmap(this);
-
-                    foreach (var element in RenderToImage.GetDiffs(prevImage, image.Data))
-                    {
-                        screen.SendImage(element);
-                    }
-
-                    prevImage = image.Data;
-                });
-
-                Thread.Sleep(500);
-            }
-        }
-
-        private void Window_ContentRendered(object sender, EventArgs e)
-        {
-
-            ViewModel.HardwareInfo = monitor.CollectInfo();
-            ViewModel.DateTimeNow = DateTime.Now;
-            var image = RenderToImage.SaveWpfElementAsBitmap(this);
-            screen.SendImage(image);
-
-            prevImage = image.Data;
-
-            new Thread(UpdateScreen).Start();
-
-        }
-
         public void StartTCP(int port = 10455)
         {
-            listener = new TcpListener(IPAddress.Loopback, port);
+            listener = new TcpListener(IPAddress.Any, port);
             listener.Start();
             Console.WriteLine("Server started, waiting for connections...");
 
@@ -189,33 +187,41 @@ namespace TuringSmartScreenNet
             {
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
                 {
-                    string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    string request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-                    var jsonString = message.Split("\r\n\r\n")[1];
+                    var firstLine = request.Split('\n')[0].Trim();
+                    var parts = firstLine.Split(' ');
+                    var method = parts[0]?.ToUpper();
+                    var url = parts[1];
 
-                    var payload = JsonSerializer.Deserialize<MultimediaMeta>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (method == "POST" && url == "/")
+                    {
+                        var jsonString = request.Split("\r\n\r\n")[1];
+                        UpdatePlayerStatus(stream, jsonString);
+                    }
+                    else if (method == "GET" && url == "/")
+                    {
+                        GetHTMLStatusPage(stream);
+                    }
+                    else if (method == "POST" && url.StartsWith("/player/"))
+                    {
+                        SendMediaKey(url);
+                        Thread.Sleep(1000);
+                        GetHTMLStatusPage(stream);
+                    }
+                    else
+                    {
+                        GetHTMLStatusPage(stream);
+                        //var response =
+                        //    "HTTP/1.1 404 Not Found\r\n" +
+                        //    "Content-Length: 0\r\n" +
+                        //    "Connection: close\r\n" +
+                        //    "\r\n";
 
-                    ViewModel.PlayerArtistName = payload.Artist;
-                    ViewModel.PlayerSongName = payload.Title;
-                    ViewModel.PlayBackState = payload.PlaybackState == "playing" ? "▶️" :
-                            payload.PlaybackState == "paused" ? "⏸️" :
-                            payload.PlaybackState == "stoped" ? "⏹️" :
-                            payload.PlaybackState == "none" ? "" :
-                            !string.IsNullOrWhiteSpace(ViewModel.PlayerSongName) ? "⏹️" :
-                            string.Empty;
-                    ViewModel.PlayerHostName = payload.Host?.Substring(0, 2) ?? string.Empty;
+                        //byte[] responseBytes = Encoding.UTF8.GetBytes(response);
+                        //stream.Write(responseBytes, 0, response.Length);
+                    }
 
-                    var response =
-                        "HTTP/1.1 202 Accepted\r\n" +
-                        "Access-Control-Allow-Origin: *\r\n" +
-                        "Access-Control-Allow-Methods: *\r\n" +
-                        "Access-Control-Allow-Headers: *\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
-
-                    byte[] responseBytes = Encoding.UTF8.GetBytes(response);
-                    stream.Write(responseBytes, 0, response.Length);
                 }
             }
             catch (Exception ex)
@@ -228,6 +234,78 @@ namespace TuringSmartScreenNet
                 client.Close();
                 Console.WriteLine("Client disconnected.");
             }
+        }
+
+        private void SendMediaKey(string url)
+        {
+            var parts = url.Split("/");
+            var button = parts[^1]?.ToUpper();
+            switch (button)
+            {
+                case "PLAY-PAUSE":
+                    MediaKeys.PlayPause();
+                    break;
+                case "PREV":
+                    MediaKeys.Previous();
+                    break;
+                case "NEXT":
+                    MediaKeys.Next();
+                    break;
+                case "VOLUME-UP":
+                    MediaKeys.VolumeUp();
+                    break;
+                case "VOLUME-DOWN":
+                    MediaKeys.VolumeDown();
+                    break;
+            }
+        }
+
+        private void GetHTMLStatusPage(NetworkStream stream)
+        {
+            string html = string.Format(htmlPageTemplate, ViewModel.PlayerArtistName, ViewModel.PlayerSongName);
+
+            byte[] body = Encoding.UTF8.GetBytes(html);
+
+            // (3) HTTP-ответ
+            string headers =
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/html; charset=utf-8\r\n" +
+                $"Content-Length: {body.Length}\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            byte[] headerBytes = Encoding.ASCII.GetBytes(headers);
+
+            // (4) Отдаём ответ
+            stream.Write(headerBytes, 0, headerBytes.Length);
+            stream.Write(body, 0, body.Length);
+        }
+
+        private void UpdatePlayerStatus(NetworkStream stream, string jsonString)
+        {
+            var payload = JsonSerializer.Deserialize<MultimediaMeta>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            ViewModel.PlayerArtistName = payload.Artist;
+            ViewModel.PlayerSongName = payload.Title;
+            ViewModel.PlayBackState = payload.PlaybackState == "playing" ? "▶️" :
+                    payload.PlaybackState == "paused" ? "⏸️" :
+                    payload.PlaybackState == "stoped" ? "⏹️" :
+                    payload.PlaybackState == "none" ? "" :
+                    !string.IsNullOrWhiteSpace(ViewModel.PlayerSongName) ? "⏹️" :
+                    string.Empty;
+            ViewModel.PlayerHostName = payload.Host?.Substring(0, 2) ?? string.Empty;
+
+            var response =
+                "HTTP/1.1 202 Accepted\r\n" +
+                "Access-Control-Allow-Origin: *\r\n" +
+                "Access-Control-Allow-Methods: *\r\n" +
+                "Access-Control-Allow-Headers: *\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            byte[] responseBytes = Encoding.UTF8.GetBytes(response);
+            stream.Write(responseBytes, 0, response.Length);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -250,6 +328,82 @@ namespace TuringSmartScreenNet
             ShowInTaskbar = true;
             Activate();
         }
+
+        string htmlPageTemplate = $@"
+<!DOCTYPE html>
+<html lang=""ru"">
+<head>
+    <meta charset=""UTF-8"">
+    <title>Плеер</title>
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+</head>
+<body>
+
+<h2 style=""font-size:clamp(18px, 4vw, 28px);"">
+    {{0}} — {{1}}
+</h2>
+
+<div>
+    <form method=""post"" action=""/player/prev"" style=""display:inline-block;"">
+        <button
+            type=""submit""
+            style=""
+                width:clamp(56px, 18vw, 80px);
+                height:clamp(56px, 18vw, 80px);
+                font-size:clamp(22px, 8vw, 32px);
+            "">
+            ⏮
+        </button>
+    </form>
+
+    <form method=""post"" action=""/player/play-pause"" style=""display:inline-block;"">
+        <button
+            type=""submit""
+            style=""
+                width:clamp(56px, 18vw, 80px);
+                height:clamp(56px, 18vw, 80px);
+                font-size:clamp(22px, 8vw, 32px);
+            "">
+            ⏯
+        </button>
+    </form>
+
+    <form method=""post"" action=""/player/next"" style=""display:inline-block;"">
+        <button
+            type=""submit""
+            style=""
+                width:clamp(56px, 18vw, 80px);
+                height:clamp(56px, 18vw, 80px);
+                font-size:clamp(22px, 8vw, 32px);
+            "">
+            ⏭
+        </button>
+    </form>
+</div>
+
+<br>
+
+<div>
+    <form method=""post"" action=""/player/volume-down"" style=""display:inline-block;"">
+        <button style=""width:clamp(56px,18vw,80px);height:clamp(56px,18vw,80px);font-size:clamp(22px,8vw,32px);"">
+            🔉
+        </button>
+    </form>
+
+
+    <form method=""post"" action=""/player/volume-up"" style=""display:inline-block;"">
+        <button style=""width:clamp(56px,18vw,80px);height:clamp(56px,18vw,80px);font-size:clamp(22px,8vw,32px);"">
+            🔊
+        </button>
+    </form>
+</div>
+
+</body>
+</html>
+
+
+
+";
     }
 }
 
