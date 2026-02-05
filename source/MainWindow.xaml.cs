@@ -1,4 +1,5 @@
-﻿using System.Management;
+﻿using System.IO.Ports;
+using System.Management;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -25,6 +26,7 @@ namespace TuringSmartScreenNet
         private byte[]? prevImage;
 
         private MainViewModel ViewModel { get; set; } = new();
+        public SerialPort IRPort { get; private set; }
 
         public MainWindow()
         {
@@ -46,6 +48,8 @@ namespace TuringSmartScreenNet
             _Cts = new CancellationTokenSource();
             _cancellationToken = _Cts.Token;
 
+            //new Thread(IRReceiverHadler).Start();
+            IRReceiverHadler();
 
 
         }
@@ -88,6 +92,48 @@ namespace TuringSmartScreenNet
                 });
 
                 Thread.Sleep(1000);
+            }
+        }
+
+        private void IRReceiverHadler()
+        {
+            IRPort = new SerialPort("COM6")
+            {
+                DtrEnable = true,
+                RtsEnable = true,
+                ReadTimeout = 1000,
+                BaudRate = 115200,
+                DataBits = 8,
+                StopBits = StopBits.One,
+                Parity = Parity.None
+            };
+            IRPort.DataReceived += SerialDataReceivedEventHandler;
+            IRPort.Open();
+        }
+
+        private void SerialDataReceivedEventHandler(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
+        {
+            var command = IRPort.ReadExisting()?.Trim();
+            switch (command)
+            {
+                case "0x843502FD":
+                    MediaKeys.PlayPause();
+                    break;
+                case "0x843505FA":
+                    MediaKeys.Previous();
+                    break;
+                case "0x843507F8":
+                    MediaKeys.Next();
+                    break;
+                case "0x843510EF":
+                    MediaKeys.VolumeUp();
+                    break;
+                case "0x843514EB":
+                    MediaKeys.VolumeDown();
+                    break;
+                case "0x84350CF3":
+                    MediaKeys.Mute();
+                    break;
             }
         }
         private string GetBluetoothBatteryStatus()
@@ -319,6 +365,7 @@ namespace TuringSmartScreenNet
         {
             _Cts.Cancel();
             screen.Dispose();
+            IRPort.Dispose();
             Application.Current.Shutdown();
         }
 
