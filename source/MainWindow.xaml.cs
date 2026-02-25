@@ -1,7 +1,10 @@
-﻿using System.IO.Ports;
+﻿using Microsoft.Win32;
+using RJCP.IO.Ports;
+using System.IO.Ports;
 using System.Management;
 using System.Net;
 using System.Net.Sockets;
+using System.Resources;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -25,12 +28,16 @@ namespace TuringSmartScreenNet
         private readonly CancellationToken _cancellationToken;
         private byte[]? prevImage;
 
+        ConwayLifeV8 _conwayLifeV8 = new();
         private MainViewModel ViewModel { get; set; } = new();
-        public SerialPort IRPort { get; private set; }
+        public SerialPortStream IRPort { get; private set; }
 
         public MainWindow()
         {
             InitializeComponent();
+
+            _Cts = new CancellationTokenSource();
+            _cancellationToken = _Cts.Token;
 
             monitor = new HardwareInfoProvider();
 
@@ -44,14 +51,20 @@ namespace TuringSmartScreenNet
             StartTCP();
 
             DataContext = ViewModel;
-
-            _Cts = new CancellationTokenSource();
-            _cancellationToken = _Cts.Token;
-
-            //new Thread(IRReceiverHadler).Start();
             IRReceiverHadler();
 
+            SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
 
+
+        }
+
+        private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
+        {
+            if (e.Mode == PowerModes.Resume)
+            {
+                prevImage = null;
+                IRReceiverHadler();
+            }
         }
 
         private void Window_ContentRendered(object sender, EventArgs e)
@@ -71,14 +84,31 @@ namespace TuringSmartScreenNet
         {
             while (!_cancellationToken.IsCancellationRequested)
             {
+                if (!IRPort.IsOpen)
+                {
+                    //IRReceiverHadler();
+                }
+
+                var even = true;
+
                 Dispatcher.Invoke(DispatcherPriority.Background, () =>
                 {
                     ViewModel.HardwareInfo = monitor.CollectInfo();
                     ViewModel.DateTimeNow = DateTime.Now;
+                    if (even)
+                    {
+                        ViewModel.Conway = _conwayLifeV8.Next();
+                        even = !even;
+                    }
 
                     if (ViewModel.DateTimeNow.Second % 10 == 0)
                     {
                         ViewModel.BluetoothStatus = GetBluetoothBatteryStatus();
+                    }
+
+                    if ((IRPort?.IsOpen ?? false) && !(ViewModel.BluetoothStatus?.StartsWith("R") ?? false))
+                    {
+                        ViewModel.BluetoothStatus = "R " + ViewModel.BluetoothStatus;
                     }
 
                     var image = RenderToImage.SaveWpfElementAsBitmap(this);
@@ -91,28 +121,33 @@ namespace TuringSmartScreenNet
                     prevImage = image.Data;
                 });
 
-                Thread.Sleep(1000);
+                Thread.Sleep(500);
             }
         }
 
         private void IRReceiverHadler()
         {
-            IRPort = new SerialPort("COM6")
+            IRPort?.Dispose();
+
+            IRPort = new SerialPortStream("COM6")
             {
-                DtrEnable = true,
-                RtsEnable = true,
+                DtrEnable = false,
+                RtsEnable = false,
                 ReadTimeout = 1000,
                 BaudRate = 115200,
                 DataBits = 8,
-                StopBits = StopBits.One,
-                Parity = Parity.None
             };
             IRPort.DataReceived += SerialDataReceivedEventHandler;
             IRPort.Open();
         }
 
-        private void SerialDataReceivedEventHandler(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
+
+        private void SerialDataReceivedEventHandler(object sender, RJCP.IO.Ports.SerialDataReceivedEventArgs e)
         {
+            if (!IRPort.IsOpen)
+            {
+                return;
+            }
             var command = IRPort.ReadExisting()?.Trim();
             switch (command)
             {
@@ -138,40 +173,54 @@ namespace TuringSmartScreenNet
         }
         private string GetBluetoothBatteryStatus()
         {
-            bool isConnected = false;
-            byte status = 0;
-
-            using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%Studio Wireless%'");
-            var list = searcher.Get();
-            foreach (ManagementObject obj in list)
+            try
             {
-                //string devId = obj["DeviceID"]?.ToString() ?? "";
-                //string caption = obj["Caption"]?.ToString() ?? "";
-                //string PNPClass = obj["PNPClass"]?.ToString() ?? "";
-                //var pp = obj.Properties;
 
-                var batteryStatusProperty = "{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2";
-                var connectionStatusProperty = "{83DA6326-97A6-4088-9453-A1923F573B29} 15";
 
-                var batteryStatus = GetDeviceProperty<byte?>(obj, batteryStatusProperty);
-                if (batteryStatus.HasValue)
+                bool isConnected = false;
+                byte status = 0;
+
+                using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%Studio Wireless%'");
+                var list = searcher.Get();
+                foreach (ManagementObject obj in list)
                 {
-                    status = batteryStatus.Value;
-                }
+                    //string devId = obj["DeviceID"]?.ToString() ?? "";
+                    //string caption = obj["Caption"]?.ToString() ?? "";
+                    //string PNPClass = obj["PNPClass"]?.ToString() ?? "";
+                    //var pp = obj.Properties;
 
-                var isConnectedValue = GetDeviceProperty<bool?>(obj, connectionStatusProperty);
-                if (isConnectedValue.HasValue && isConnectedValue.Value)
+                    var batteryStatusProperty = "{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2";
+                    var connectionStatusProperty = "{83DA6326-97A6-4088-9453-A1923F573B29} 15";
+
+                    var isConnectedValue = GetDeviceProperty<bool?>(obj, connectionStatusProperty);
+                    if (isConnectedValue.HasValue && isConnectedValue.Value)
+                    {
+                        isConnected = isConnectedValue.Value;
+                    }
+                    if (isConnected)
+                    {
+                        var batteryStatus = GetDeviceProperty<byte?>(obj, batteryStatusProperty);
+                        if (batteryStatus.HasValue)
+                        {
+                            status = batteryStatus.Value;
+                        }
+                    }
+
+
+
+                }
+                if (isConnected)
                 {
-                    isConnected = isConnectedValue.Value;
+                    return $"ᛒ {status}%";
                 }
+                else
+                {
+                    return string.Empty;
+                }
+            }
+            catch
+            {
 
-            }
-            if (isConnected)
-            {
-                return $"ᛒ {status}%";
-            }
-            else
-            {
                 return string.Empty;
             }
         }

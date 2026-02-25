@@ -1,6 +1,4 @@
 ﻿using System.IO.Ports;
-using System.Net.Sockets;
-using System.Windows.Controls;
 
 namespace TuringSmartScreenNet;
 
@@ -115,7 +113,7 @@ public class ScreenDriver : IDisposable
         _serialPort.Write(packet, 0, packet.Length);
     }
 
-    public static byte[] BuildHeader(Command cmd, int x, int y, int width, int height)
+    private static byte[] BuildHeader(Command cmd, int x, int y, int width, int height)
     {
         int ex = x + width - 1;
         int ey = y + height - 1;

@@ -1,83 +1,131 @@
-﻿using LibreHardwareMonitor.Hardware;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+﻿using System.Diagnostics;
+using System.Management;
 
 namespace TuringSmartScreenNet
 {
-    internal class HardwareInfoProvider
+    internal class HardwareInfoProvider : IDisposable
     {
-        private readonly Computer computer;
+        private readonly PerformanceCounter _cpuCounter;
+        private readonly PerformanceCounter _cpuPerfCounter;
+        private readonly uint MaxCPUClockSpeed;
+        private readonly ManagementObjectSearcher _wmiOperatingSystem;
+        private List<PerformanceCounter>? _gpuCounters;
+        private bool _disposedValue;
 
         public HardwareInfoProvider()
         {
-            computer = new Computer
-            {
-                IsCpuEnabled = true,
-                IsGpuEnabled = true,
-                IsMemoryEnabled = true,
-                IsMotherboardEnabled = true,
-            };
-            computer.Open();
+
+            _cpuCounter = new PerformanceCounter(
+                 "Processor",
+                 "% Processor Time",
+                 "_Total"
+            );
+
+            _cpuPerfCounter = new PerformanceCounter(
+                 "Processor Information",
+                 "% Processor Performance",
+                  "_Total"
+            );
+
+            using var CPU0 = new ManagementObject("Win32_Processor.DeviceID='CPU0'");
+            MaxCPUClockSpeed = (uint)CPU0["MaxClockSpeed"];
+
+            _wmiOperatingSystem = new ManagementObjectSearcher("select * from Win32_OperatingSystem");
+
+            CreateGPUCounters();
         }
-        public HardwareInfo CollectInfo()
+
+        private void CreateGPUCounters()
         {
-            
-            var info = new HardwareInfo();
-            foreach (var hardware in computer.Hardware)
+            try
             {
-                hardware.Update();
+                var _gpuCounterCategory = new PerformanceCounterCategory("GPU Engine");
 
-                var sensors = hardware.Sensors
-                    .Where(s => s.Value.HasValue)
-                    .ToList();
+                _gpuCounters = _gpuCounterCategory
+                                    .GetInstanceNames()
+                                    .Where(counterName => counterName.EndsWith("engtype_3D"))
+                                    .SelectMany(_gpuCounterCategory.GetCounters)
+                                    .Where(counter => counter.CounterName.Equals("Utilization Percentage"))
+                                    .ToList();
+            }
+            catch
+            {
 
-
-                if (hardware.HardwareType == HardwareType.Cpu)
-                {
-                    info.CPUTemperature = (int)(sensors.FirstOrDefault(static s => s.SensorType == SensorType.Temperature && s.Name == "CPU Package")?.Value ?? 0);
-                    info.CPUFreq = (sensors.FirstOrDefault(static s => s.SensorType == SensorType.Clock)?.Value ?? 0) / 1000;
-                    info.CPUUsage = (int)(sensors.FirstOrDefault(static s => s.SensorType == SensorType.Load && s.Name == "CPU Total")?.Value ?? 0);
-
-                }
-
-                if (hardware.HardwareType == HardwareType.GpuIntel)
-                {
-                    info.GPUUsage = (int)(sensors.FirstOrDefault(static s => s.SensorType == SensorType.Load && s.Name == "GPU Core")?.Value ?? info.GPUUsage);
-                }
-
-                if (hardware.HardwareType == HardwareType.Memory && hardware.Name == "Total Memory")
-                {
-                    info.RAMUsage = (int)(sensors.FirstOrDefault(static s => s.SensorType == SensorType.Load)?.Value ?? 0);
-                }
-
-                if (hardware.HardwareType == HardwareType.Motherboard)
-                {
-                    foreach (var subHardware in hardware.SubHardware)
-                    {
-                        subHardware.Update();
-                        var subSensors = subHardware.Sensors
-                           .Where(s => s.Value.HasValue)
-                           .ToList();
-                        info.FANFreq = (int)(subSensors.FirstOrDefault(static s => s.SensorType == SensorType.Fan && s.Name == "CPU Fan")?.Value ?? 0);
-                        info.FANFreqPct = (int)(subSensors.FirstOrDefault(static s => s.SensorType == SensorType.Control && s.Name == "CPU Fan")?.Value ?? 0);
-                    }
-
-                }
             }
 
-            
+        }
+
+        public HardwareInfo CollectInfo()
+        {
+
+            var info = new HardwareInfo();
+
+            try
+            {
+                info.CPUUsage = (int)_cpuCounter.NextValue();
+
+                float cpuPerf = _cpuPerfCounter.NextValue();
+                info.CPUFreq = MaxCPUClockSpeed * (cpuPerf / 100) / 1000;
+
+                var memoryValues = _wmiOperatingSystem.Get().Cast<ManagementObject>().Select(mo => new
+                {
+                    FreePhysicalMemory = (ulong)mo["FreePhysicalMemory"],
+                    TotalVisibleMemorySize = (ulong)mo["TotalVisibleMemorySize"]
+                }).FirstOrDefault();
+
+                if (memoryValues != null)
+                {
+                    info.RAMUsage = (int)(((memoryValues.TotalVisibleMemorySize - memoryValues.FreePhysicalMemory) / (double)memoryValues.TotalVisibleMemorySize) * 100);
+                }
+            }
+            catch
+            {
+
+            }
+
+            try
+            {
+                info.GPUUsage = (int)_gpuCounters.Sum(x => x.NextValue());
+            }
+            catch (Exception ex)
+            {
+                CreateGPUCounters();
+            }
             return info;
+
+            
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+
+
+                _cpuCounter?.Dispose();
+                _cpuPerfCounter?.Dispose();
+                _wmiOperatingSystem?.Dispose();
+                _disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 
     internal class HardwareInfo
     {
-        public int CPUUsage { get; set; } = 11;
-        public int CPUTemperature { get; set; } = 45;
-        public float CPUFreq { get; set; } = 1.6545f;
-        public int GPUUsage { get; set; } = 5;
-        public int FANFreq { get; set; } = 1234;
-        public int FANFreqPct { get; set; } = 34;
-        public int RAMUsage { get; set; } = 24;
+        public int CPUUsage { get; set; }
+        public int CPUTemperature { get; set; }
+        public float CPUFreq { get; set; }
+        public int GPUUsage { get; set; } = 100;
+        public int FANFreq { get; set; }
+        public int FANFreqPct { get; set; }
+        public int RAMUsage { get; set; }
 
     }
 

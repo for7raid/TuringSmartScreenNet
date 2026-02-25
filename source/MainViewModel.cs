@@ -1,6 +1,7 @@
 ﻿
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Media;
 
 namespace TuringSmartScreenNet
 {
@@ -66,6 +67,15 @@ namespace TuringSmartScreenNet
             set { if (_bluetoothStatus == value) return; _bluetoothStatus = value; OnPropertyChanged(); }
         }
         public Func<double, string> CPUUsageLabelFormatting { get; } = (x) => $"{x}%";
+
+
+        private ImageSource? _conway;
+        public ImageSource? Conway
+        {
+            get { return _conway; }
+            set { _conway = value; OnPropertyChanged(); }
+        }
+
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

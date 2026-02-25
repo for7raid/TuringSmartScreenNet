@@ -1,23 +1,26 @@
 # Пет проект.
 ## Вывод на экран 320х480 пикселей информации о системе
 * Загрузка процессора
-* Температура процессора
+* ~~Температура процессора~~
 * Частота процессора
 * Общая загрузка GPU
 * Использование ОЗУ
-* Скорость вращения вентилятора на процессоре
+* ~~Скорость вращения вентилятора на процессоре~~
 * Дата, время
 * Статус подключения нашуников и уровень заряда
 * Вывод информации о проигрываемом трекре (только zvuk.com и vk.com) через расширение к Chrome
+* Игра ["Жизнь Конвея"](https://ru.wikipedia.org/wiki/%D0%98%D0%B3%D1%80%D0%B0_%C2%AB%D0%96%D0%B8%D0%B7%D0%BD%D1%8C%C2%BB) чтобы заполнить экран
 
 Используемое устройство - монитор на usb-com 3,5 дм, 320х480 пикселей, Turing Smart Screen 3.5" http://turzx.com/
+
+Дополнительно добавлен функционал управления воспроизведением звука с пульта ИК ДУ через приемник на Ардуино.
 
 Единственный используемый архитектурный патерн "И так сойдет: работает, да и ладно". Делал для себя, код маленький, все захардкожено, никакой большой поддержки или развития не предвидится. Так что мне не стыдно =).
 
 Благодарности и источники информации:
 * https://github.com/mathoudebine/turing-smart-screen-python
 * https://github.com/LolitaIceMia/Turing3.5ServerMonitor
-* https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
+* ~~https://github.com/LibreHardwareMonitor/LibreHardwareMonitor~~ Вызывает синий экран, пришлось убрать и костылить, теперь без температуры и скорости вентилятора
 * https://github.com/nikvoronin/Xm4Battery
 
 **Лицензия** - код свободен, делайте что хотите.
@@ -43,7 +46,7 @@ http://turzx.com/
 The only architectural pattern used is “Good enough: it works, so whatever.”
 Made for personal use: the code is small, everything is hardcoded, and no serious support or further development is planned. So I’m not ashamed of it 🙂
 
-Acknowledgements and information sources:
+Credits:
 * https://github.com/mathoudebine/turing-smart-screen-python
 * https://github.com/LolitaIceMia/Turing3.5ServerMonitor
 * https://github.com/LibreHardwareMonitor/LibreHardwareMonitor

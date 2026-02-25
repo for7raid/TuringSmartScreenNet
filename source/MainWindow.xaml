@@ -167,7 +167,11 @@
         </Grid>
 
         <Grid Grid.Row="3">
-            <Grid.RowDefinitions>
+            <Image Source="{Binding Conway}" 
+                   Stretch="None"
+                   Margin="0,1,0,1"/>
+            
+            <!--<Grid.RowDefinitions>
                 <RowDefinition Height="20"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
@@ -204,7 +208,7 @@
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
                 FontSize="30"
-                Text="{Binding HardwareInfo.FANFreq, StringFormat={}{0:D} RPM}"/>
+                Text="{Binding HardwareInfo.FANFreq, StringFormat={}{0:D} RPM}"/>-->
 
         </Grid>
 

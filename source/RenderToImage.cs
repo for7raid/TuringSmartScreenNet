@@ -152,11 +152,14 @@ namespace TuringSmartScreenNet
             return new(resultBuffer, x, y, width, height);
         }
 
-        public static List<ImageData> GetDiffs(byte[] prev, byte[] current)
+        public static List<ImageData> GetDiffs(byte[]? prev, byte[] current)
         {
+
             const int width = 320;
             const int height = 480;
             const int dilationRadius = 5;
+
+            if (prev == null) return new List<ImageData>() { new ImageData(current, 0, 0, width, height) };
 
             var diff = new bool[width * height];
 
