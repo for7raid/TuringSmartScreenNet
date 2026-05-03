@@ -17,7 +17,7 @@
         ContentRendered="Window_ContentRendered"
         Closing="Window_Closing">
     <d:Window.DataContext>
-        <local:MainViewModel BluetoothStatus="ᛒ 100%" PlayerArtistName="Moby" PlayerSongName="The Broken Places" PlayBackState="▶️" PlayerHostName="vk"/>
+        <local:MainViewModel VariantStatusBluetoothStatus="ᛒ 100%" PlayerArtistName="Moby" PlayerSongName="The Broken Places" PlayBackState="▶️" PlayerHostName="vk"/>
     </d:Window.DataContext>
 
     <Window.Resources>
@@ -49,7 +49,7 @@
                  TrayMouseDoubleClick="Show_Click"/>
 
         <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1,1,1,1" CornerRadius="3"  Margin="0,-1,0,1"/>
-        <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:dd.MM.yy}}" 
+        <TextBlock Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:dd MMM},ConverterCulture=ru-RU}" 
                    VerticalAlignment="Center"
                    FontWeight="Bold" Margin="5,0,0,0"/>
         <TextBlock Name="txtTime" Grid.Row="0" FontSize="24" Text="{Binding Path=DateTimeNow, StringFormat={}{0:HH:mm:ss}}" 
@@ -58,7 +58,7 @@
                    FontWeight="Bold" Margin="0,0,5,0"/>
         
         <TextBlock Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
-                   FontSize="16" Text="{Binding BluetoothStatus}" 
+                   FontSize="16" Text="{Binding VariantStatus}" 
                    FontWeight="Bold"/>
 
 
@@ -167,11 +167,11 @@
         </Grid>
 
         <Grid Grid.Row="3">
-            <Image Source="{Binding Conway}" 
+            <!--<Image Source="{Binding Conway}" 
                    Stretch="None"
-                   Margin="0,1,0,1"/>
+                   Margin="0,1,0,1"/>-->
             
-            <!--<Grid.RowDefinitions>
+            <Grid.RowDefinitions>
                 <RowDefinition Height="20"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
@@ -208,7 +208,7 @@
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
                 FontSize="30"
-                Text="{Binding HardwareInfo.FANFreq, StringFormat={}{0:D} RPM}"/>-->
+                Text="{Binding HardwareInfo.FANFreq, StringFormat={}{0:D} RPM}"/>
 
         </Grid>
 

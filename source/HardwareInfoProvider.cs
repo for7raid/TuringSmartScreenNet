@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using LibreHardwareMonitor.Hardware;
+using LibreHardwareMonitor.Interop.PowerMonitor;
+using System.Diagnostics;
 using System.Management;
 
 namespace TuringSmartScreenNet
@@ -9,6 +11,7 @@ namespace TuringSmartScreenNet
         private readonly PerformanceCounter _cpuPerfCounter;
         private readonly uint MaxCPUClockSpeed;
         private readonly ManagementObjectSearcher _wmiOperatingSystem;
+        private readonly Computer _computer;
         private List<PerformanceCounter>? _gpuCounters;
         private bool _disposedValue;
 
@@ -33,6 +36,9 @@ namespace TuringSmartScreenNet
             _wmiOperatingSystem = new ManagementObjectSearcher("select * from Win32_OperatingSystem");
 
             CreateGPUCounters();
+
+            _computer = new Computer { IsMotherboardEnabled = true, IsCpuEnabled = true };
+            _computer.Open();
         }
 
         private void CreateGPUCounters()
@@ -77,6 +83,29 @@ namespace TuringSmartScreenNet
                 {
                     info.RAMUsage = (int)(((memoryValues.TotalVisibleMemorySize - memoryValues.FreePhysicalMemory) / (double)memoryValues.TotalVisibleMemorySize) * 100);
                 }
+
+                foreach (var hardware in _computer.Hardware)
+                {
+                    hardware.Update();
+                    if (hardware.HardwareType == HardwareType.Cpu)
+                    {
+                        info.CPUTemperature = (int)(hardware.Sensors.FirstOrDefault(static s => s.SensorType == SensorType.Temperature && s.Name == "CPU Package" && s.Value.HasValue)?.Value ?? 0);
+
+                    }
+                    if (hardware.HardwareType == HardwareType.Motherboard)
+                    {
+                        foreach (var subHardware in hardware.SubHardware)
+                        {
+                            subHardware.Update();
+                            var subSensors = subHardware.Sensors
+                               .Where(s => s.Value.HasValue)
+                               .ToList();
+                            info.FANFreq = (int)(subSensors.FirstOrDefault(static s => s.SensorType == SensorType.Fan && s.Name == "CPU Fan")?.Value ?? 0);
+                            info.FANFreqPct = (int)(subSensors.FirstOrDefault(static s => s.SensorType == SensorType.Control && s.Name == "CPU Fan")?.Value ?? 0);
+                        }
+
+                    }
+                }
             }
             catch
             {
@@ -93,7 +122,7 @@ namespace TuringSmartScreenNet
             }
             return info;
 
-            
+
         }
 
         protected virtual void Dispose(bool disposing)

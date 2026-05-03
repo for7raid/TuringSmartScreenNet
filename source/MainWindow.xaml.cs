@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using RJCP.IO.Ports;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Management;
 using System.Net;
@@ -7,6 +8,7 @@ using System.Net.Sockets;
 using System.Resources;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -28,7 +30,7 @@ namespace TuringSmartScreenNet
         private readonly CancellationToken _cancellationToken;
         private byte[]? prevImage;
 
-        ConwayLifeV8 _conwayLifeV8 = new();
+        //ConwayLifeV8 _conwayLifeV8 = new();
         private MainViewModel ViewModel { get; set; } = new();
         public SerialPortStream IRPort { get; private set; }
 
@@ -41,7 +43,8 @@ namespace TuringSmartScreenNet
 
             monitor = new HardwareInfoProvider();
 
-            screen = new ScreenDriver("COM3");
+
+            screen = new ScreenDriver(FindComPort("1A86", "5722"));
             screen.Connect();
             screen.SendCommand(Command.ScreenOn);
             screen.SendCommand(Command.Clear);
@@ -97,19 +100,29 @@ namespace TuringSmartScreenNet
                     ViewModel.DateTimeNow = DateTime.Now;
                     if (even)
                     {
-                        ViewModel.Conway = _conwayLifeV8.Next();
+                        //ViewModel.Conway = _conwayLifeV8.Next();
                         even = !even;
                     }
 
                     if (ViewModel.DateTimeNow.Second % 10 == 0)
                     {
-                        ViewModel.BluetoothStatus = GetBluetoothBatteryStatus();
+                        _bluetoothStatus = GetBluetoothBatteryStatus();
                     }
 
-                    if ((IRPort?.IsOpen ?? false) && !(ViewModel.BluetoothStatus?.StartsWith("R") ?? false))
+
+                    ViewModel.VariantStatus = _bluetoothStatus;
+                    
+                    if ((IRPort?.IsOpen ?? false))
                     {
-                        ViewModel.BluetoothStatus = "R " + ViewModel.BluetoothStatus;
+                        ViewModel.VariantStatus = "R " + ViewModel.VariantStatus;
                     }
+
+                    if (Console.CapsLock)
+                    {
+                        ViewModel.VariantStatus = "⇑ " + ViewModel.VariantStatus;
+
+                    }
+
 
                     var image = RenderToImage.SaveWpfElementAsBitmap(this);
 
@@ -129,7 +142,7 @@ namespace TuringSmartScreenNet
         {
             IRPort?.Dispose();
 
-            IRPort = new SerialPortStream("COM6")
+            IRPort = new SerialPortStream(FindComPort("1A86", "7523"))
             {
                 DtrEnable = false,
                 RtsEnable = false,
@@ -142,7 +155,7 @@ namespace TuringSmartScreenNet
         }
 
 
-        private void SerialDataReceivedEventHandler(object sender, RJCP.IO.Ports.SerialDataReceivedEventArgs e)
+        private void SerialDataReceivedEventHandler(object? sender, RJCP.IO.Ports.SerialDataReceivedEventArgs e)
         {
             if (!IRPort.IsOpen)
             {
@@ -424,6 +437,28 @@ namespace TuringSmartScreenNet
             ShowInTaskbar = true;
             Activate();
         }
+        private static string? FindComPort(string TargetVid, string TargetPid)
+        {
+            try
+            {
+                using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%(COM%'");
+                foreach (ManagementObject obj in searcher.Get())
+                {
+
+                    string devId = obj["DeviceID"]?.ToString() ?? "";
+                    string name = obj["Name"]?.ToString() ?? string.Empty;
+
+                    if (devId.Contains($"VID_{TargetVid}", StringComparison.OrdinalIgnoreCase) &&
+                        devId.Contains($"PID_{TargetPid}", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var match = Regex.Match(obj["Caption"]?.ToString() ?? "", @"\((COM\d+)\)");
+                        if (match.Success) return match.Groups[1].Value;
+                    }
+                }
+            }
+            catch { }
+            throw new Exception("Устройство на COM порту не найдено.");
+        }
 
         string htmlPageTemplate = $@"
 <!DOCTYPE html>
@@ -500,7 +535,11 @@ namespace TuringSmartScreenNet
 
 
 ";
+        private string _bluetoothStatus;
     }
+
 }
+
+
 
 public record class MultimediaMeta(string Artist, string Title, string PlaybackState, string Host);

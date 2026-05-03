@@ -61,7 +61,7 @@ namespace TuringSmartScreenNet
         }
 
         private string _bluetoothStatus;
-        public string BluetoothStatus
+        public string VariantStatus
         {
             get { return _bluetoothStatus; }
             set { if (_bluetoothStatus == value) return; _bluetoothStatus = value; OnPropertyChanged(); }
