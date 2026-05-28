@@ -11,6 +11,7 @@ namespace TuringSmartScreenNet
         private const short VK_MEDIA_PLAY_PAUSE = 0xB3;
         private const short VK_MEDIA_NEXT_TRACK = 0xB0;
         private const short VK_MEDIA_PREV_TRACK = 0xB1;
+        private const short VK_MEDIA_STOP = 0xB2;
         private const short VK_VOLUME_UP = 0xAF;
         private const short VK_VOLUME_DOWN = 0xAE;
         private const short VK_VOLUME_MUTE = 0xAD;
@@ -110,6 +111,7 @@ namespace TuringSmartScreenNet
         // ===== публичные методы =====
 
         public static void PlayPause() => Send(VK_MEDIA_PLAY_PAUSE);
+        public static void Stop() => Send(VK_MEDIA_STOP);
         public static void Next() => Send(VK_MEDIA_NEXT_TRACK);
         public static void Previous() => Send(VK_MEDIA_PREV_TRACK);
         public static void VolumeUp() => Send(VK_VOLUME_UP);

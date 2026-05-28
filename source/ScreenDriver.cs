@@ -128,6 +128,14 @@ public class ScreenDriver : IDisposable
 
         return buffer;
     }
+
+    public void Stop()
+    {
+        if (_serialPort?.IsOpen == true)
+        {
+            _serialPort.Close();
+        }
+    }
     public void Dispose()
     {
         if (_serialPort?.IsOpen == true)

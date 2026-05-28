@@ -43,13 +43,8 @@ namespace TuringSmartScreenNet
 
             monitor = new HardwareInfoProvider();
 
-
             screen = new ScreenDriver(FindComPort("1A86", "5722"));
-            screen.Connect();
-            screen.SendCommand(Command.ScreenOn);
-            screen.SendCommand(Command.Clear);
-            screen.SetOrientation(Orientation.REVERSE_PORTRAIT, 320, 480);
-            screen.SetBrightness(100);
+            SetupScreen();
 
             StartTCP();
 
@@ -61,12 +56,27 @@ namespace TuringSmartScreenNet
 
         }
 
+        private void SetupScreen()
+        {
+            screen.Connect();
+            screen.SendCommand(Command.ScreenOn);
+            screen.SendCommand(Command.Clear);
+            screen.SetOrientation(Orientation.REVERSE_PORTRAIT, 320, 480);
+            screen.SetBrightness(100);
+        }
+
         private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
-            if (e.Mode == PowerModes.Resume)
+            if (e.Mode == PowerModes.Suspend)
+            {
+                screen.Stop();
+                IRPort?.Dispose();
+            }
+            else if (e.Mode == PowerModes.Resume)
             {
                 prevImage = null;
                 IRReceiverHadler();
+                SetupScreen();
             }
         }
 
@@ -166,6 +176,9 @@ namespace TuringSmartScreenNet
             {
                 case "0x843502FD":
                     MediaKeys.PlayPause();
+                    break;
+                case "0x843503FC":
+                    MediaKeys.Stop();
                     break;
                 case "0x843505FA":
                     MediaKeys.Previous();
