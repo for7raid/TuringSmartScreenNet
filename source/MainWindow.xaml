@@ -32,7 +32,7 @@
 
 
     <Grid Margin="5">
-
+      
         <Grid.RowDefinitions>
             <RowDefinition Height="40"/>
             <RowDefinition Height="115"/>
@@ -40,7 +40,7 @@
             <RowDefinition Height="115"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-
+      
         <tb:TaskbarIcon x:Name="myNotifyIcon"
                  Visibility="Visible"
                  ToolTipText="TuringSmartScreenNet"

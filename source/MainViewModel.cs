@@ -34,14 +34,14 @@ namespace TuringSmartScreenNet
         public string PlayerSongName
         {
             get { return _playerSongName; }
-            set { if (_playerSongName == value) return; _playerSongName = value; OnPropertyChanged(); }
+            set { _playerSongName = value; OnPropertyChanged(); }
         }
 
         private string _playerArtistName;
         public string PlayerArtistName
         {
             get { return _playerArtistName; }
-            set { if (_playerArtistName == value) return; _playerArtistName = value; OnPropertyChanged(); }
+            set { _playerArtistName = value; OnPropertyChanged(); }
         }
 
         private string _playBackState;
@@ -49,7 +49,7 @@ namespace TuringSmartScreenNet
         public string PlayBackState
         {
             get { return _playBackState; }
-            set { if (_playBackState == value) return;  _playBackState = value; OnPropertyChanged(); }
+            set { _playBackState = value; OnPropertyChanged(); }
         }
 
         private string _playerHostName;
@@ -57,14 +57,14 @@ namespace TuringSmartScreenNet
         public string PlayerHostName
         {
             get { return _playerHostName; }
-            set { if (_playerHostName == value) return; _playerHostName = value; OnPropertyChanged(); }
+            set { _playerHostName = value; OnPropertyChanged(); }
         }
 
         private string _bluetoothStatus;
         public string VariantStatus
         {
             get { return _bluetoothStatus; }
-            set { if (_bluetoothStatus == value) return; _bluetoothStatus = value; OnPropertyChanged(); }
+            set { _bluetoothStatus = value; OnPropertyChanged(); }
         }
         public Func<double, string> CPUUsageLabelFormatting { get; } = (x) => $"{x}%";
 

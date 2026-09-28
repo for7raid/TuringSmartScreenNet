@@ -1,11 +1,9 @@
-﻿using Microsoft.Win32;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using RJCP.IO.Ports;
-using System.Diagnostics;
-using System.IO.Ports;
 using System.Management;
 using System.Net;
 using System.Net.Sockets;
-using System.Resources;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -20,14 +18,14 @@ namespace TuringSmartScreenNet
     public partial class MainWindow : Window
     {
 
-        private readonly HardwareInfoProvider monitor;
+        private HardwareInfoProvider monitor;
 
         private TcpListener? listener;
 
-        public ScreenDriver screen { get; }
+        public ScreenDriver screen;
 
-        private readonly CancellationTokenSource _Cts;
-        private readonly CancellationToken _cancellationToken;
+        private CancellationTokenSource _Cts;
+        private CancellationToken _cancellationToken;
         private byte[]? prevImage;
 
         //ConwayLifeV8 _conwayLifeV8 = new();
@@ -36,23 +34,78 @@ namespace TuringSmartScreenNet
 
         public MainWindow()
         {
+
+            //var log = new LoggerConfiguration()
+            //       .WriteTo.Sink(new LogStoreSink())
+            //       .CreateLogger();
+
+            var LoggerFactoryInstance = LoggerFactory.Create(builder =>
+            {
+                builder.AddFile($@"C:\temp\TuringSmartScreenNet.txt");
+            });
+
+            _logger = LoggerFactoryInstance.CreateLogger<MainWindow>();
+
             InitializeComponent();
 
-            _Cts = new CancellationTokenSource();
-            _cancellationToken = _Cts.Token;
 
-            monitor = new HardwareInfoProvider();
-
-            screen = new ScreenDriver(FindComPort("1A86", "5722"));
-            SetupScreen();
-
-            StartTCP();
 
             DataContext = ViewModel;
-            IRReceiverHadler();
+
 
             SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
 
+            App.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
+
+            _logger.LogInformation("Initialized");
+
+
+
+
+        }
+
+        private void Current_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            _logger.LogCritical(e.Exception, "Fatal");
+            e.Handled = true;
+        }
+
+        private void Start()
+        {
+            try
+            {
+                _Cts = new CancellationTokenSource();
+                _cancellationToken = _Cts.Token;
+                prevImage = null;
+
+                monitor = new HardwareInfoProvider();
+
+                screen = new ScreenDriver(FindComPort("1A86", "5722", "screen"));
+                SetupScreen();
+
+                StartTCP();
+                IRReceiverHadler();
+
+                new Thread(UpdateScreen).Start();
+
+                _logger.LogInformation("Started");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Start issue");
+            }
+        }
+
+        private void Stop()
+        {
+            _Cts.Cancel();
+            screen?.Stop();
+            screen?.Dispose();
+            IRPort?.Dispose();
+            listener?.Dispose();
+            prevImage = null;
+
+            _logger.LogInformation("Stoped");
 
         }
 
@@ -67,52 +120,31 @@ namespace TuringSmartScreenNet
 
         private void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
+            _logger.LogInformation("PowerModeChanged {mode}", e.Mode);
+
             if (e.Mode == PowerModes.Suspend)
             {
-                screen.Stop();
-                IRPort?.Dispose();
+                Stop();
             }
             else if (e.Mode == PowerModes.Resume)
             {
-                prevImage = null;
-                IRReceiverHadler();
-                SetupScreen();
+                Start();
             }
         }
 
         private void Window_ContentRendered(object sender, EventArgs e)
         {
-
-            ViewModel.HardwareInfo = monitor.CollectInfo();
-            ViewModel.DateTimeNow = DateTime.Now;
-            var image = RenderToImage.SaveWpfElementAsBitmap(this);
-            screen.SendImage(image);
-
-            prevImage = image.Data;
-
-            new Thread(UpdateScreen).Start();
-
+            Start();
         }
         private void UpdateScreen()
         {
             while (!_cancellationToken.IsCancellationRequested)
             {
-                if (!IRPort.IsOpen)
-                {
-                    //IRReceiverHadler();
-                }
-
-                var even = true;
 
                 Dispatcher.Invoke(DispatcherPriority.Background, () =>
                 {
                     ViewModel.HardwareInfo = monitor.CollectInfo();
                     ViewModel.DateTimeNow = DateTime.Now;
-                    if (even)
-                    {
-                        //ViewModel.Conway = _conwayLifeV8.Next();
-                        even = !even;
-                    }
 
                     if (ViewModel.DateTimeNow.Second % 10 == 0)
                     {
@@ -121,8 +153,8 @@ namespace TuringSmartScreenNet
 
 
                     ViewModel.VariantStatus = _bluetoothStatus;
-                    
-                    if ((IRPort?.IsOpen ?? false))
+
+                    if (!(IRPort?.IsDisposed ?? true) && (IRPort?.IsOpen ?? false))
                     {
                         ViewModel.VariantStatus = "R " + ViewModel.VariantStatus;
                     }
@@ -150,18 +182,25 @@ namespace TuringSmartScreenNet
 
         private void IRReceiverHadler()
         {
-            IRPort?.Dispose();
-
-            IRPort = new SerialPortStream(FindComPort("1A86", "7523"))
+            try
             {
-                DtrEnable = false,
-                RtsEnable = false,
-                ReadTimeout = 1000,
-                BaudRate = 115200,
-                DataBits = 8,
-            };
-            IRPort.DataReceived += SerialDataReceivedEventHandler;
-            IRPort.Open();
+                IRPort?.Dispose();
+
+                IRPort = new SerialPortStream(FindComPort("1A86", "7523", "IR Port"))
+                {
+                    DtrEnable = false,
+                    RtsEnable = false,
+                    ReadTimeout = 1000,
+                    BaudRate = 115200,
+                    DataBits = 8,
+                };
+                IRPort.DataReceived += SerialDataReceivedEventHandler;
+                IRPort.Open();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Нет IR приемника");
+            }
         }
 
 
@@ -275,7 +314,7 @@ namespace TuringSmartScreenNet
             listener = new TcpListener(IPAddress.Any, port);
             listener.Start();
             Console.WriteLine("Server started, waiting for connections...");
-
+            _logger.LogInformation("Server started, waiting for connections...");
             Thread acceptThread = new Thread(AcceptClients);
             acceptThread.Start();
         }
@@ -294,6 +333,7 @@ namespace TuringSmartScreenNet
                 catch (Exception ex)
                 {
                     Console.WriteLine("Error accepting client: " + ex.Message);
+                    _logger.LogError(ex, "Error accepting client");
                 }
             }
         }
@@ -347,6 +387,7 @@ namespace TuringSmartScreenNet
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "WEB Error");
                 Console.WriteLine("Error communicating with client: " + ex.Message);
             }
             finally
@@ -439,8 +480,8 @@ namespace TuringSmartScreenNet
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
             _Cts.Cancel();
-            screen.Dispose();
-            IRPort.Dispose();
+            screen?.Dispose();
+            IRPort?.Dispose();
             Application.Current.Shutdown();
         }
 
@@ -450,7 +491,7 @@ namespace TuringSmartScreenNet
             ShowInTaskbar = true;
             Activate();
         }
-        private static string? FindComPort(string TargetVid, string TargetPid)
+        private static string? FindComPort(string TargetVid, string TargetPid, string title)
         {
             try
             {
@@ -470,7 +511,7 @@ namespace TuringSmartScreenNet
                 }
             }
             catch { }
-            throw new Exception("Устройство на COM порту не найдено.");
+            throw new Exception($"Устройство {title} на COM порту не найдено.");
         }
 
         string htmlPageTemplate = $@"
@@ -549,6 +590,7 @@ namespace TuringSmartScreenNet
 
 ";
         private string _bluetoothStatus;
+        private readonly ILogger<MainWindow> _logger;
     }
 
 }

@@ -1,5 +1,4 @@
 ﻿using LibreHardwareMonitor.Hardware;
-using LibreHardwareMonitor.Interop.PowerMonitor;
 using System.Diagnostics;
 using System.Management;
 
